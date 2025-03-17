@@ -34,7 +34,7 @@
   </div>
 
   <script>
-    const BASE_URL = 'http://localhost:8000/api/auth';
+    const BASE_URL = 'https://type-form-server.vercel.app/api/auth';
     const FRONTEND_BASE_URL = 'http://127.0.0.1:5500/src';
 
     function showMessage(message) {
@@ -54,7 +54,7 @@
         const response = await fetch(`${BASE_URL}/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password }), // Added name to the payload
+          body: JSON.stringify({ name, email, password }),
         });
         const data = await response.json();
 

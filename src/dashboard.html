@@ -97,7 +97,7 @@
   </div>
 
   <script>
-    const BASE_URL = 'http://localhost:8000/api';
+    const BASE_URL = 'https://type-form-server.vercel.app/api';
     const FRONTEND_BASE_URL = 'http://127.0.0.1:5500/src';
     const token = localStorage.getItem('token');
 
@@ -112,7 +112,6 @@
       setTimeout(() => messageElement.classList.add('hidden'), 3000);
     }
 
-    // Fetch user details to get the name
     async function loadUserName() {
       try {
         const response = await fetch(`${BASE_URL}/auth/me`, {
@@ -135,14 +134,12 @@
       }
     }
 
-    // Toggle dropdown on click
     const userNameBtn = document.getElementById('userNameBtn');
     const dropdownContent = document.getElementById('dropdownContent');
     userNameBtn.addEventListener('click', () => {
       dropdownContent.classList.toggle('show');
     });
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', (event) => {
       if (!userNameBtn.contains(event.target) && !dropdownContent.contains(event.target)) {
         dropdownContent.classList.remove('show');
@@ -168,7 +165,7 @@
             const row = document.createElement('tr');
             row.className = 'hover:bg-gray-50 transition-colors';
             const formLink = `${FRONTEND_BASE_URL}/form-view.html#${form.link.split('/')[2]}`;
-            const formId = form._id.toString(); // Convert ObjectId to string
+            const formId = form._id.toString();
             row.innerHTML = `
               <td class="px-6 py-4 text-sm text-gray-900">${form.title}</td>
               <td class="px-6 py-4 text-sm text-gray-600">
@@ -204,7 +201,7 @@
 
           if (response.ok) {
             showMessage('formMessage', 'Form deleted successfully');
-            loadForms(); // Refresh the forms list
+            loadForms();
           } else {
             showMessage('formMessage', data.message || 'Failed to delete form');
           }
@@ -289,7 +286,6 @@
       }
     });
 
-    // Load user name and forms on page load
     loadUserName();
     loadForms();
   </script>

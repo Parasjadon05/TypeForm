@@ -31,11 +31,11 @@
   </div>
 
   <script>
-    const BASE_URL = 'http://localhost:8000/api';
+    const BASE_URL = 'https://type-form-server.vercel.app/api';
     const FRONTEND_BASE_URL = 'http://127.0.0.1:5500/src';
     const token = localStorage.getItem('token');
     let formId = window.location.hash.slice(1) || window.location.pathname.split('/').pop();
-    formId = formId.replace('/form/', ''); // Clean up formId if it includes '/form/'
+    formId = formId.replace('/form/', '');
 
     if (!token) {
       window.location.href = `${FRONTEND_BASE_URL}/login.html`;
@@ -54,7 +54,6 @@
 
     async function loadResponses() {
       try {
-        // Fetch form details to get the questions
         const formResponse = await fetch(`${BASE_URL}/forms/${formId}`);
         const formData = await formResponse.json();
 
@@ -63,10 +62,8 @@
           return;
         }
 
-        // Update page title with form title
         document.getElementById('formTitle').textContent = `${formData.title} Responses`;
 
-        // Fetch responses
         const response = await fetch(`${BASE_URL}/responses/form/${formId}`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -82,7 +79,6 @@
           return;
         }
 
-        // Build table header
         const tableHeader = document.getElementById('tableHeader');
         tableHeader.innerHTML = `
           <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Email</th>
@@ -92,7 +88,6 @@
           `).join('')}
         `;
 
-        // Build table body
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
         responses.forEach(response => {

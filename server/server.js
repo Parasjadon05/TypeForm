@@ -10,11 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // CORS configuration
-app.use(cors({
-  origin: 'http://127.0.0.1:5500', // Your frontend origin
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 
 app.use(express.json());
 
