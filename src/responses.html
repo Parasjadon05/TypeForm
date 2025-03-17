@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form Responses - Form Builder</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="container mx-auto p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h1 id="formTitle" class="text-3xl font-bold">Form Responses</h1>
+      <a href="dashboard.html" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Back to Dashboard</a>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+      <h2 class="text-xl font-semibold mb-4">Responses</h2>
+      <p id="message" class="mb-4 text-center text-red-500 hidden"></p>
+      <div id="responsesTable" class="overflow-x-auto">
+        <table class="min-w-full border-collapse">
+          <thead>
+            <tr id="tableHeader" class="bg-gray-200"></tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-gray-200"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BASE_URL = 'http://localhost:8000/api';
+    const FRONTEND_BASE_URL = 'http://127.0.0.1:5500/src';
+    const token = localStorage.getItem('token');
+    let formId = window.location.hash.slice(1) || window.location.pathname.split('/').pop();
+    formId = formId.replace('/form/', ''); // Clean up formId if it includes '/form/'
+
+    if (!token) {
+      window.location.href = `${FRONTEND_BASE_URL}/login.html`;
+    }
+
+    if (!formId) {
+      showMessage('No form ID provided in the URL');
+    }
+
+    function showMessage(message) {
+      const messageElement = document.getElementById('message');
+      messageElement.textContent = message;
+      messageElement.classList.remove('hidden');
+      setTimeout(() => messageElement.classList.add('hidden'), 3000);
+    }
+
+    async function loadResponses() {
+      try {
+        // Fetch form details to get the questions
+        const formResponse = await fetch(`${BASE_URL}/forms/${formId}`);
+        const formData = await formResponse.json();
+
+        if (!formResponse.ok) {
+          showMessage(formData.message || 'Form not found');
+          return;
+        }
+
+        // Update page title with form title
+        document.getElementById('formTitle').textContent = `${formData.title} Responses`;
+
+        // Fetch responses
+        const response = await fetch(`${BASE_URL}/responses/form/${formId}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const responses = await response.json();
+
+        if (!response.ok) {
+          showMessage(responses.message || `Failed to load responses (Status: ${response.status})`);
+          return;
+        }
+
+        if (!Array.isArray(responses) || responses.length === 0) {
+          showMessage('No responses yet for this form');
+          return;
+        }
+
+        // Build table header
+        const tableHeader = document.getElementById('tableHeader');
+        tableHeader.innerHTML = `
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Email</th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">Submission Time</th>
+          ${formData.inputs.map((input, index) => `
+            <th class="px-4 py-2 text-left text-sm font-medium text-gray-700">${input.question}</th>
+          `).join('')}
+        `;
+
+        // Build table body
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+        responses.forEach(response => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="px-4 py-2 text-sm text-gray-600">${response.email || 'Not provided'}</td>
+            <td class="px-4 py-2 text-sm text-gray-600">${new Date(response.submittedAt).toLocaleString()}</td>
+            ${formData.inputs.map((input, index) => {
+              const answer = response.answers.find(ans => ans.questionId == index);
+              return `
+                <td class="px-4 py-2 text-sm text-gray-600">${answer ? answer.value : '-'}</td>
+              `;
+            }).join('')}
+          `;
+          tableBody.appendChild(row);
+        });
+      } catch (error) {
+        showMessage('An error occurred while loading responses');
+      }
+    }
+
+    loadResponses();
+  </script>
+</body>
+</html>

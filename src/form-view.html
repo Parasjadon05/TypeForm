@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form View - Form Builder</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <!-- Email Input Section -->
+    <div id="emailSection">
+      <h1 class="text-2xl font-bold text-center mb-6">Please Enter Your Email</h1>
+      <div class="mb-4">
+        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+        <input type="email" id="email" name="email" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:border-blue-500" required>
+      </div>
+      <button id="continueBtn" class="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600">Continue</button>
+    </div>
+
+    <!-- Form Section (Hidden Initially) -->
+    <div id="formSection" class="hidden">
+      <h1 id="formTitle" class="text-2xl font-bold text-center mb-6"></h1>
+      <form id="form" class="space-y-6"></form>
+      <p id="message" class="mt-4 text-center text-red-500 hidden"></p>
+    </div>
+  </div>
+
+  <script>
+    const BASE_URL = 'http://localhost:8000/api';
+    const FRONTEND_BASE_URL = 'http://127.0.0.1:5500/src';
+    const formId = window.location.hash.slice(1) || window.location.pathname.split('/').pop();
+
+    if (!formId) {
+      showMessage('No form ID provided in the URL');
+    }
+
+    let userEmail = '';
+
+    function showMessage(message) {
+      const messageElement = document.getElementById('message');
+      messageElement.textContent = message;
+      messageElement.classList.remove('hidden');
+      setTimeout(() => messageElement.classList.add('hidden'), 3000);
+    }
+
+    // Handle Continue button click to show the form
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      const emailInput = document.getElementById('email');
+      userEmail = emailInput.value.trim();
+
+      if (!userEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) {
+        showMessage('Please enter a valid email address');
+        return;
+      }
+
+      document.getElementById('emailSection').classList.add('hidden');
+      document.getElementById('formSection').classList.remove('hidden');
+      loadForm();
+    });
+
+    async function loadForm() {
+      try {
+        const response = await fetch(`${BASE_URL}/forms/${formId}`);
+        const formData = await response.json();
+
+        if (!response.ok) {
+          showMessage(formData.message || 'Form not found');
+          return;
+        }
+
+        document.getElementById('formTitle').textContent = formData.title;
+
+        const form = document.getElementById('form');
+        form.innerHTML = '';
+
+        formData.inputs.forEach((input, index) => {
+          const div = document.createElement('div');
+          if (input.type === 'text') {
+            div.innerHTML = `
+              <label class="block text-sm font-medium text-gray-700">${input.question}</label>
+              <input type="text" name="answer-${index}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required>
+            `;
+          } else if (input.type === 'mcq') {
+            div.innerHTML = `
+              <label class="block text-sm font-medium text-gray-700">${input.question}</label>
+              <select name="answer-${index}" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required>
+                ${input.options.map(option => `<option value="${option}">${option}</option>`).join('')}
+              </select>
+            `;
+          }
+          form.appendChild(div);
+        });
+
+        const submitButton = document.createElement('button');
+        submitButton.type = 'submit';
+        submitButton.className = 'w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600';
+        submitButton.textContent = 'Submit';
+        form.appendChild(submitButton);
+      } catch (error) {
+        showMessage('An error occurred while loading the form');
+      }
+    }
+
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const answers = Array.from(e.target.elements)
+        .filter(el => el.name.startsWith('answer-'))
+        .map(el => ({
+          questionId: parseInt(el.name.split('-')[1]),
+          value: el.value,
+        }));
+
+      try {
+        const response = await fetch(`${BASE_URL}/responses/submit/${formId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: userEmail, answers }),
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          showMessage('Response submitted successfully!');
+          e.target.reset();
+        } else {
+          showMessage(data.message || 'Failed to submit response');
+        }
+      } catch (error) {
+        showMessage('An error occurred while submitting the response');
+      }
+    });
+  </script>
+</body>
+</html>
