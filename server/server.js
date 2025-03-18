@@ -10,36 +10,44 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // CORS configuration
-const allowedOrigins = [
-  'http://127.0.0.1:5500', // Local development
-  // 'https://your-frontend.vercel.app', // Replace with your production frontend URL
-];
-
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (e.g., mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: '*', // Allow all origins temporarily for testing
   methods: ['GET', 'POST', 'DELETE', 'PUT', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }));
 
-app.options('*', cors()); // Handle preflight requests for all routes
+app.options('*', (req, res) => {
+  console.log('Handling OPTIONS request for:', req.url);
+  res.status(204).end();
+});
+
+// Log all incoming requests
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
+  next();
+});
 
 app.use(express.json());
 
 // Connect to MongoDB
 connectDB();
 
+// Test endpoint
+app.get('/test', (req, res) => {
+  console.log('Test endpoint hit');
+  res.json({ message: 'Server is running' });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/forms', formRoutes);
 app.use('/api/responses', responseRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ message: 'Server error' });
+});
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
